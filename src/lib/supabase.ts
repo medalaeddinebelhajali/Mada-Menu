@@ -304,7 +304,7 @@ export const adminUpdateSubscription = async (
 export const updatePlanPrice = async (planId: string, priceMonthly: number): Promise<Plan> => {
   const { data, error } = await supabase
     .from('plans')
-    .update({ price_monthly: priceMonthly, updated_at: new Date().toISOString() })
+    .update({ price_monthly: priceMonthly })
     .eq('id', planId)
     .select()
     .single();
