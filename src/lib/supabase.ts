@@ -4,22 +4,14 @@ import {
   Subscription, Payment, Invoice, SupportTicket, Profile,
 } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vinqhhpezbkndwgdpize.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_W16rD_lcbp9TrsOYSSdrdA_nhuXmho1';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    '❌ [Mada Menu] VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY manquant.\n' +
-    '→ Ajoutez ces variables dans Vercel → Project Settings → Environment Variables\n' +
-    '→ Puis redéployez.'
-  );
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.warn('⚠️ Variables Supabase non définies dans l\'environnement, utilisation des valeurs par défaut.');
 }
 
-// createClient accepte des chaînes vides — les appels API échoueront proprement
-export const supabase = createClient(
-  supabaseUrl ?? 'https://missing-env.supabase.co',
-  supabaseAnonKey ?? 'missing-key'
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ============================================================
 // PLANS
