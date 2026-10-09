@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import {
-  Restaurant, Category, Product, Plan,
+  Restaurant, Category, Product, Plan, PlanTier,
   Subscription, Payment, Invoice, SupportTicket, Profile,
 } from '../types';
 
@@ -162,6 +162,112 @@ export const getInvoices = async (restaurantId: string): Promise<Invoice[]> => {
     .order('issued_at', { ascending: false });
   if (error) throw error;
   return data as Invoice[];
+};
+
+export const submitD17Payment = async (
+  restaurantId: string,
+  amount: number,
+  proofUrl: string,
+  reference?: string
+): Promise<Payment> => {
+  const { data: rpcData, error: rpcError } = await supabase.rpc('submit_d17_payment', {
+    p_restaurant_id: restaurantId,
+    p_amount: amount,
+    p_proof_url: proofUrl,
+    p_reference: reference || null
+  });
+
+  if (rpcError) {
+    console.warn('RPC submit_d17_payment not found or failed, using direct insert:', rpcError.message);
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('restaurant_id', restaurantId)
+      .maybeSingle();
+
+    const { data: insData, error: insErr } = await supabase
+      .from('payments')
+      .insert({
+        subscription_id: sub?.id,
+        restaurant_id: restaurantId,
+        amount,
+        currency: 'TND',
+        provider: 'd17',
+        provider_reference: reference || 'Paiement D17 vers 20934403',
+        proof_url: proofUrl,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (insErr) {
+      console.error('Error in direct insert submitD17Payment:', insErr);
+      throw insErr;
+    }
+    return insData as Payment;
+  }
+
+  return rpcData as Payment;
+};
+
+export const getPendingD17Payments = async (): Promise<Payment[]> => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*, restaurant:restaurants(name, slug, phone)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching pending D17 payments:', error);
+    return [];
+  }
+  return (data || []) as Payment[];
+};
+
+export const approveD17Payment = async (
+  paymentId: string,
+  planId: PlanTier = 'pro',
+  durationDays: number = 30
+): Promise<any> => {
+  const { data: rpcData, error: rpcError } = await supabase.rpc('approve_d17_payment', {
+    p_payment_id: paymentId,
+    p_plan_id: planId,
+    p_duration_days: durationDays
+  });
+
+  if (rpcError) {
+    console.warn('RPC approve_d17_payment failed, using fallback update:', rpcError.message);
+    const { data: pay } = await supabase
+      .from('payments')
+      .update({ status: 'completed' })
+      .eq('id', paymentId)
+      .select()
+      .single();
+
+    if (pay) {
+      await supabase.from('subscriptions').update({
+        plan_id: planId,
+        status: 'active',
+        current_period_start: new Date().toISOString(),
+        current_period_end: new Date(Date.now() + durationDays * 86400000).toISOString(),
+        cancel_at_period_end: false
+      }).eq('restaurant_id', pay.restaurant_id);
+    }
+    return pay;
+  }
+  return rpcData;
+};
+
+export const rejectD17Payment = async (paymentId: string): Promise<Payment> => {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ status: 'failed' })
+    .eq('id', paymentId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Payment;
 };
 
 // ============================================================

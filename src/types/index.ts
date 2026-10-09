@@ -112,10 +112,16 @@ export interface Payment {
   restaurant_id: string;
   amount: number;
   currency: string;
-  provider: 'konnect' | 'sandbox';
+  provider: 'konnect' | 'sandbox' | 'd17';
   provider_reference?: string;
+  proof_url?: string;
   status: PaymentStatus;
   created_at: string;
+  restaurant?: {
+    name: string;
+    slug: string;
+    phone?: string;
+  };
 }
 
 export interface Invoice {

@@ -727,8 +727,118 @@ CREATE POLICY "Menu Images Authenticated Delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'menu-images');
 
 -- ============================================================
+-- SECTION 8 : SUPPORT PAIEMENT MOBILE D17 (TUNISIE POSTE)
+-- ============================================================
+
+-- 8.1 — Ajouter la valeur 'd17' à l'enum payment_provider si non existant
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum 
+    WHERE enumtypid = 'payment_provider'::regtype 
+    AND enumlabel = 'd17'
+  ) THEN
+    ALTER TYPE payment_provider ADD VALUE 'd17';
+  END IF;
+END $$;
+
+-- 8.2 — Colonne proof_url dans public.payments
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS proof_url TEXT;
+
+-- 8.3 — Politique de mise à jour des paiements pour le SuperAdmin
+DROP POLICY IF EXISTS "payments_update" ON public.payments;
+CREATE POLICY "payments_update" ON public.payments 
+  FOR UPDATE USING (public.is_super_admin());
+
+-- 8.4 — Fonction RPC : Soumettre un paiement D17 avec preuve
+CREATE OR REPLACE FUNCTION public.submit_d17_payment(
+  p_restaurant_id UUID,
+  p_amount NUMERIC,
+  p_proof_url TEXT,
+  p_reference TEXT DEFAULT NULL
+)
+RETURNS public.payments LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_sub_id UUID;
+  v_payment public.payments;
+BEGIN
+  SELECT id INTO v_sub_id FROM public.subscriptions
+  WHERE restaurant_id = p_restaurant_id;
+
+  INSERT INTO public.payments (
+    subscription_id,
+    restaurant_id,
+    amount,
+    currency,
+    provider,
+    provider_reference,
+    proof_url,
+    status
+  )
+  VALUES (
+    v_sub_id,
+    p_restaurant_id,
+    p_amount,
+    'TND',
+    'd17',
+    COALESCE(p_reference, 'Paiement D17 vers 20934403'),
+    p_proof_url,
+    'pending'
+  )
+  RETURNING * INTO v_payment;
+
+  RETURN v_payment;
+END;
+$$;
+
+-- 8.5 — Fonction RPC : Valider un paiement D17 par l'administrateur et activer l'abonnement
+CREATE OR REPLACE FUNCTION public.approve_d17_payment(
+  p_payment_id UUID,
+  p_plan_id plan_tier DEFAULT 'pro',
+  p_duration_days INT DEFAULT 30
+)
+RETURNS public.payments LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_payment public.payments;
+  v_inv_num TEXT;
+BEGIN
+  -- Seul le Super Admin peut exécuter
+  IF NOT public.is_super_admin() THEN
+    RAISE EXCEPTION 'Accès refusé. Réservé au SuperAdmin.';
+  END IF;
+
+  -- Mettre à jour le statut du paiement
+  UPDATE public.payments
+  SET status = 'completed'
+  WHERE id = p_payment_id
+  RETURNING * INTO v_payment;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Paiement introuvable';
+  END IF;
+
+  -- Mettre à jour l'abonnement du restaurant
+  UPDATE public.subscriptions
+  SET plan_id              = p_plan_id,
+      status               = 'active',
+      current_period_start = NOW(),
+      current_period_end   = NOW() + (p_duration_days || ' days')::INTERVAL,
+      cancel_at_period_end = FALSE
+  WHERE restaurant_id = v_payment.restaurant_id;
+
+  -- Générer la facture
+  v_inv_num := public.generate_invoice_number();
+  INSERT INTO public.invoices (invoice_number, payment_id, restaurant_id, amount, tax_amount)
+  VALUES (v_inv_num, v_payment.id, v_payment.restaurant_id, v_payment.amount, ROUND(v_payment.amount * 0.19, 3));
+
+  RETURN v_payment;
+END;
+$$;
+
+-- ============================================================
 -- FIN DU SCRIPT
 -- ============================================================
 -- Pour exécuter : copiez ce script dans l'éditeur SQL de Supabase
 -- Dashboard > SQL Editor > New Query > Coller > Run
 -- ============================================================
+
