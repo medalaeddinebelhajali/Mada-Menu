@@ -74,6 +74,7 @@ export const PublicMenuPage: React.FC = () => {
   }
 
   const isRtl = lang === 'ar';
+  const themeColor = restaurant.theme_color || '#d97706';
 
   const filteredProducts = products.filter(p => {
     const matchesCategory = activeCategory === 'all' || p.category_id === activeCategory;
@@ -92,21 +93,21 @@ export const PublicMenuPage: React.FC = () => {
         {restaurant.cover_url ? (
           <img src={restaurant.cover_url} alt={restaurant.name} className="w-full h-full object-cover opacity-60 scale-105" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-r from-amber-900 to-slate-950 opacity-80" />
+          <div className="w-full h-full bg-gradient-to-r from-slate-900 to-slate-950 opacity-80" style={{ backgroundImage: `linear-gradient(to right, ${themeColor}40, #020617)` }} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
         {/* Top Control Bar */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-          <div className="px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800 text-xs font-bold text-amber-400 flex items-center gap-1.5 shadow-lg">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800 text-xs font-bold flex items-center gap-1.5 shadow-lg" style={{ color: themeColor }}>
+            <Sparkles className="w-3.5 h-3.5" style={{ color: themeColor }} />
             <span>Mada Menu</span>
           </div>
           <button
             onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}
-            className="px-3.5 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800 text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:border-amber-500/50 transition-colors"
+            className="px-3.5 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800 text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:border-slate-700 transition-colors"
           >
-            <Globe className="w-3.5 h-3.5 text-amber-400" />
+            <Globe className="w-3.5 h-3.5" style={{ color: themeColor }} />
             <span>{lang === 'fr' ? 'العربية' : 'Français'}</span>
           </button>
         </div>
@@ -116,11 +117,11 @@ export const PublicMenuPage: React.FC = () => {
       <div className="max-w-3xl mx-auto px-4 -mt-20 relative z-20 space-y-6">
         <div className="glass-panel p-6 rounded-3xl space-y-4 border border-slate-800/80 shadow-2xl">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-            <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 border-amber-500/60 overflow-hidden shrink-0 shadow-xl">
+            <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 overflow-hidden shrink-0 shadow-xl flex items-center justify-center" style={{ borderColor: themeColor }}>
               {restaurant.logo_url ? (
                 <img src={restaurant.logo_url} alt={restaurant.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-amber-400 text-2xl font-bold">☕</div>
+                <div className="w-full h-full flex items-center justify-center text-2xl font-bold" style={{ color: themeColor }}>☕</div>
               )}
             </div>
             <div className="space-y-1 flex-1">
@@ -131,13 +132,13 @@ export const PublicMenuPage: React.FC = () => {
               <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-400">
                 {restaurant.address && (
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                    <MapPin className="w-3.5 h-3.5" style={{ color: themeColor }} />
                     {restaurant.address}, {restaurant.city}
                   </span>
                 )}
                 {restaurant.phone && (
                   <span className="flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-amber-400" />
+                    <Phone className="w-3.5 h-3.5" style={{ color: themeColor }} />
                     {restaurant.phone}
                   </span>
                 )}
@@ -155,7 +156,7 @@ export const PublicMenuPage: React.FC = () => {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={isRtl ? 'ابحث عن مشروب أو طبق...' : 'Rechercher un plat ou une boisson...'}
-              className={`w-full py-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 backdrop-blur-xl shadow-xl text-sm ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
+              className={`w-full py-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-500 focus:outline-none backdrop-blur-xl shadow-xl text-sm ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
             />
           </div>
 
@@ -164,21 +165,24 @@ export const PublicMenuPage: React.FC = () => {
             <button
               onClick={() => setActiveCategory('all')}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shadow-md ${
-                activeCategory === 'all' ? 'gold-button text-slate-950' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
+                activeCategory === 'all' ? 'text-slate-950 font-black' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
               }`}
+              style={activeCategory === 'all' ? { backgroundColor: themeColor, color: '#090d16' } : {}}
             >
               {isRtl ? 'الكل' : 'Tous'} ({products.length})
             </button>
             {categories.map(cat => {
               const count = products.filter(p => p.category_id === cat.id).length;
               const catName = isRtl ? (cat.name_ar || cat.name_fr) : cat.name_fr;
+              const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all shadow-md ${
-                    activeCategory === cat.id ? 'gold-button text-slate-950' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
+                    isActive ? 'text-slate-950 font-black' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
                   }`}
+                  style={isActive ? { backgroundColor: themeColor, color: '#090d16' } : {}}
                 >
                   <span>{cat.icon}</span>
                   <span>{catName}</span>
@@ -204,7 +208,7 @@ export const PublicMenuPage: React.FC = () => {
               return (
                 <div
                   key={product.id}
-                  className="glass-card p-4 sm:p-5 rounded-2xl flex items-center gap-4 border border-slate-800/60 hover:border-amber-500/40 transition-all group"
+                  className="glass-card p-4 sm:p-5 rounded-2xl flex items-center gap-4 border border-slate-800/60 hover:border-slate-700 transition-all group"
                 >
                   {product.image_url ? (
                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-800 overflow-hidden shrink-0 border border-slate-800">
@@ -215,8 +219,8 @@ export const PublicMenuPage: React.FC = () => {
                   )}
                   <div className="flex-1 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">{productName}</h3>
-                      <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black shrink-0">
+                      <h3 className="text-base font-bold text-white transition-colors">{productName}</h3>
+                      <span className="px-3 py-1 rounded-full text-xs font-black shrink-0 border" style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}50`, color: themeColor }}>
                         {product.price.toFixed(3)} {restaurant.currency}
                       </span>
                     </div>

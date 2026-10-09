@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getProducts, getCategories, getSubscription, createProduct, updateProduct, deleteProduct } from '../../lib/supabase';
 import { Product, Category, Subscription } from '../../types';
-import { Plus, Edit2, Trash2, Check, AlertCircle, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, AlertCircle, Search, Loader2, Upload } from 'lucide-react';
 
 export const ProductsTab: React.FC = () => {
   const { currentRestaurant } = useAuth();
@@ -233,9 +233,42 @@ export const ProductsTab: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Description (Français)</label>
                 <textarea rows={2} value={formData.description_fr} onChange={e => setFormData({ ...formData, description_fr: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500" placeholder="Notes de torréfaction intenses..." />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">URL Photo Produit</label>
-                <input type="url" value={formData.image_url} onChange={e => setFormData({ ...formData, image_url: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500" placeholder="https://images.unsplash.com/..." />
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-300">Photo du Produit</label>
+                <div className="flex items-center gap-3">
+                  {formData.image_url ? (
+                    <img src={formData.image_url} alt="Preview" className="w-14 h-14 rounded-xl object-cover border border-slate-700 shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 shrink-0 text-xl">☕</div>
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <label className="cursor-pointer px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-amber-400 inline-flex items-center gap-2 transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Importer une photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setFormData(prev => ({ ...prev, image_url: reader.result as string }));
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.image_url}
+                      onChange={e => setFormData({ ...formData, image_url: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500"
+                      placeholder="Ou URL (https://...)"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-2 pt-1">
                 <input type="checkbox" id="avail" checked={formData.is_available} onChange={e => setFormData({ ...formData, is_available: e.target.checked })} className="w-4 h-4 accent-amber-500" />
