@@ -81,6 +81,7 @@ export const RegisterPage: React.FC = () => {
               <input
                 type="text"
                 required
+                autoComplete="name"
                 value={formData.fullName}
                 onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
@@ -96,6 +97,7 @@ export const RegisterPage: React.FC = () => {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
@@ -110,6 +112,7 @@ export const RegisterPage: React.FC = () => {
               <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="tel"
+                autoComplete="tel"
                 value={formData.phone}
                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
@@ -126,6 +129,7 @@ export const RegisterPage: React.FC = () => {
                 type="password"
                 required
                 minLength={6}
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={e => setFormData({ ...formData, password: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-500"
