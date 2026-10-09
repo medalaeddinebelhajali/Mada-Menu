@@ -26,17 +26,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   // ─── Charger le profil depuis Supabase ───────────────────────────────────────
-  const loadProfile = async (userId: string): Promise<Profile | null> => {
-    const { data, error } = await supabase
+  const loadProfile = async (sessionUser: any): Promise<Profile | null> => {
+    if (!sessionUser) return null;
+    const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
-      .single();
-    if (error) {
-      console.error('Erreur chargement profil:', error.message);
-      return null;
+      .eq('id', sessionUser.id)
+      .maybeSingle();
+
+    if (data) return data as Profile;
+
+    // Fallback si la table profiles n'a pas encore le profil inséré
+    const fallbackProfile: Profile = {
+      id: sessionUser.id,
+      email: sessionUser.email || '',
+      full_name: sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0] || 'Utilisateur',
+      phone: sessionUser.user_metadata?.phone || '',
+      preferred_language: sessionUser.user_metadata?.preferred_language || 'fr',
+      is_super_admin: false,
+      created_at: sessionUser.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Tenter de créer le profil s'il n'existe pas
+    try {
+      await supabase.from('profiles').upsert(fallbackProfile);
+    } catch {
+      // ignorer
     }
-    return data as Profile;
+
+    return fallbackProfile;
   };
 
   // ─── Charger les restaurants de l'utilisateur ────────────────────────────────
@@ -58,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        const profile = await loadProfile(session.user.id);
+        const profile = await loadProfile(session.user);
         setUser(profile);
         if (profile) {
           const rests = await loadRestaurants(session.user.id);
@@ -75,8 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Écouter les changements d'état auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await loadProfile(session.user.id);
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+        const profile = await loadProfile(session.user);
         setUser(profile);
         if (profile) {
           const rests = await loadRestaurants(session.user.id);
@@ -99,8 +118,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ─── Login ───────────────────────────────────────────────────────────────────
   const login = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
+    if (data.session?.user) {
+      const profile = await loadProfile(data.session.user);
+      setUser(profile);
+      if (profile) {
+        const rests = await loadRestaurants(profile.id);
+        setRestaurants(rests);
+      }
+    }
     return { error: null };
   };
 
@@ -111,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fullName: string,
     phone?: string
   ): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -119,6 +146,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
     });
     if (error) return { error: error.message };
+    if (data.session?.user) {
+      const profile = await loadProfile(data.session.user);
+      setUser(profile);
+      if (profile) {
+        const rests = await loadRestaurants(profile.id);
+        setRestaurants(rests);
+      }
+    }
     return { error: null };
   };
 
