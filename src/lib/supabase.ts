@@ -11,7 +11,14 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   console.warn('⚠️ Variables Supabase non définies dans l\'environnement, utilisation des valeurs par défaut.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    lock: (async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => await fn()) as any,
+  },
+});
 
 // ============================================================
 // PLANS
