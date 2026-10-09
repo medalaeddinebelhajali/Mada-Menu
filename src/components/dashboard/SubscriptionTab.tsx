@@ -50,6 +50,21 @@ export const SubscriptionTab: React.FC = () => {
   const currentPlan = sub?.plan || plans[0];
   const targetPlan = plans.find(p => p.id === targetPlanId) || plans[1] || plans[0];
 
+  const isTrialEndedOrUpgraded = Boolean(
+    sub && (
+      sub.status === 'expired' ||
+      new Date(sub.current_period_end).getTime() < Date.now() ||
+      sub.plan_id !== 'free'
+    )
+  );
+
+  const visiblePlans = plans.filter(p => {
+    if (p.id === 'free' && isTrialEndedOrUpgraded) {
+      return false;
+    }
+    return true;
+  });
+
   const handleInitiateUpgrade = (planId: PlanTier) => {
     setTargetPlanId(planId);
     setProofUrl('');
@@ -156,8 +171,8 @@ export const SubscriptionTab: React.FC = () => {
       {/* Available Plans */}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-white">Offres Disponibles</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {plans.map(p => {
+        <div className={`grid grid-cols-1 ${visiblePlans.length === 2 ? 'sm:grid-cols-2' : 'md:grid-cols-3'} gap-4`}>
+          {visiblePlans.map(p => {
             const isCurrent = sub?.plan_id === p.id;
             return (
               <div key={p.id} className={`glass-panel p-6 rounded-2xl border flex flex-col justify-between space-y-4 ${isCurrent ? 'border-amber-500 bg-amber-500/5' : 'border-slate-800'}`}>
