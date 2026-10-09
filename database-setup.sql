@@ -742,20 +742,22 @@ BEGIN
   END IF;
 END $$;
 
--- 8.2 — Colonne proof_url dans public.payments
+-- 8.2 — Colonne proof_url et plan_id dans public.payments
 ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS proof_url TEXT;
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS plan_id plan_tier DEFAULT 'starter';
 
 -- 8.3 — Politique de mise à jour des paiements pour le SuperAdmin
 DROP POLICY IF EXISTS "payments_update" ON public.payments;
 CREATE POLICY "payments_update" ON public.payments 
   FOR UPDATE USING (public.is_super_admin());
 
--- 8.4 — Fonction RPC : Soumettre un paiement D17 avec preuve
+-- 8.4 — Fonction RPC : Soumettre un paiement D17 avec preuve et plan_id
 CREATE OR REPLACE FUNCTION public.submit_d17_payment(
   p_restaurant_id UUID,
   p_amount NUMERIC,
   p_proof_url TEXT,
-  p_reference TEXT DEFAULT NULL
+  p_reference TEXT DEFAULT NULL,
+  p_plan_id plan_tier DEFAULT 'starter'
 )
 RETURNS public.payments LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -768,6 +770,7 @@ BEGIN
   INSERT INTO public.payments (
     subscription_id,
     restaurant_id,
+    plan_id,
     amount,
     currency,
     provider,
@@ -778,6 +781,7 @@ BEGIN
   VALUES (
     v_sub_id,
     p_restaurant_id,
+    p_plan_id,
     p_amount,
     'TND',
     'd17',
@@ -794,13 +798,14 @@ $$;
 -- 8.5 — Fonction RPC : Valider un paiement D17 par l'administrateur et activer l'abonnement
 CREATE OR REPLACE FUNCTION public.approve_d17_payment(
   p_payment_id UUID,
-  p_plan_id plan_tier DEFAULT 'pro',
+  p_plan_id plan_tier DEFAULT NULL,
   p_duration_days INT DEFAULT 30
 )
 RETURNS public.payments LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_payment public.payments;
   v_inv_num TEXT;
+  v_target_plan plan_tier;
 BEGIN
   -- Seul le Super Admin peut exécuter
   IF NOT public.is_super_admin() THEN
@@ -817,9 +822,12 @@ BEGIN
     RAISE EXCEPTION 'Paiement introuvable';
   END IF;
 
+  -- Utiliser le plan spécifié en paramètre ou celui enregistré sur le paiement (sinon 'starter' par défaut)
+  v_target_plan := COALESCE(p_plan_id, v_payment.plan_id, 'starter');
+
   -- Mettre à jour l'abonnement du restaurant
   UPDATE public.subscriptions
-  SET plan_id              = p_plan_id,
+  SET plan_id              = v_target_plan,
       status               = 'active',
       current_period_start = NOW(),
       current_period_end   = NOW() + (p_duration_days || ' days')::INTERVAL,

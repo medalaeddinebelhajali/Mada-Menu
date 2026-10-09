@@ -168,13 +168,15 @@ export const submitD17Payment = async (
   restaurantId: string,
   amount: number,
   proofUrl: string,
-  reference?: string
+  reference?: string,
+  planId: PlanTier = 'starter'
 ): Promise<Payment> => {
   const { data: rpcData, error: rpcError } = await supabase.rpc('submit_d17_payment', {
     p_restaurant_id: restaurantId,
     p_amount: amount,
     p_proof_url: proofUrl,
-    p_reference: reference || null
+    p_reference: reference || null,
+    p_plan_id: planId
   });
 
   if (rpcError) {
@@ -190,6 +192,7 @@ export const submitD17Payment = async (
       .insert({
         subscription_id: sub?.id,
         restaurant_id: restaurantId,
+        plan_id: planId,
         amount,
         currency: 'TND',
         provider: 'd17',
@@ -226,12 +229,12 @@ export const getPendingD17Payments = async (): Promise<Payment[]> => {
 
 export const approveD17Payment = async (
   paymentId: string,
-  planId: PlanTier = 'pro',
+  planId?: PlanTier,
   durationDays: number = 30
 ): Promise<any> => {
   const { data: rpcData, error: rpcError } = await supabase.rpc('approve_d17_payment', {
     p_payment_id: paymentId,
-    p_plan_id: planId,
+    p_plan_id: planId || null,
     p_duration_days: durationDays
   });
 
@@ -245,8 +248,9 @@ export const approveD17Payment = async (
       .single();
 
     if (pay) {
+      const targetPlan = planId || pay.plan_id || 'starter';
       await supabase.from('subscriptions').update({
-        plan_id: planId,
+        plan_id: targetPlan,
         status: 'active',
         current_period_start: new Date().toISOString(),
         current_period_end: new Date(Date.now() + durationDays * 86400000).toISOString(),

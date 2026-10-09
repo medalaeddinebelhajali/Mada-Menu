@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, getPlans, getSuperAdminStats, getPendingD17Payments, approveD17Payment, rejectD17Payment } from '../../lib/supabase';
-import { Plan, License, Payment } from '../../types';
+import { Plan, PlanTier, License, Payment } from '../../types';
 import {
   ShieldCheck, AlertCircle, Plus, ArrowLeft, FileText, Loader2, Phone, Check, X, Eye, Image as ImageIcon
 } from 'lucide-react';
@@ -73,12 +73,13 @@ export const SuperAdminDashboard: React.FC = () => {
     reloadData();
   }, []);
 
-  const handleApprove = async (paymentId: string) => {
-    if (!confirm("Voulez-vous vraiment valider cette preuve de paiement D17 et activer l'abonnement pour 30 jours ?")) return;
+  const handleApprove = async (paymentId: string, planId?: PlanTier) => {
+    const targetPlan = planId || 'starter';
+    if (!confirm(`Voulez-vous vraiment valider cette preuve de paiement D17 et activer l'abonnement [${targetPlan.toUpperCase()}] pour 30 jours ?`)) return;
     setActionProcessing(paymentId);
     try {
-      await approveD17Payment(paymentId, 'pro', 30);
-      alert("✅ Paiement D17 validé avec succès ! Abonnement du restaurant activé pour 30 jours.");
+      await approveD17Payment(paymentId, targetPlan, 30);
+      alert(`✅ Paiement D17 validé avec succès ! Abonnement [${targetPlan.toUpperCase()}] activé pour 30 jours.`);
       await reloadData();
     } catch (err: any) {
       alert("Erreur lors de la validation : " + err.message);
@@ -226,7 +227,7 @@ export const SuperAdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {pendingPayments.map(pay => (
                 <div key={pay.id} className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
-                  {/* Restaurant info */}
+                  {/* Restaurant info & Requested Plan */}
                   <div className="flex items-start justify-between border-b border-slate-800/80 pb-3">
                     <div>
                       <h4 className="font-extrabold text-white text-base">{pay.restaurant?.name || 'Restaurant'}</h4>
@@ -236,6 +237,11 @@ export const SuperAdminDashboard: React.FC = () => {
                       {pay.restaurant?.phone && (
                         <p className="text-xs text-slate-400">Tél : {pay.restaurant.phone}</p>
                       )}
+                      <div className="mt-2">
+                        <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-extrabold text-xs inline-block">
+                          Offre Demandée : {(pay.plan_id || 'starter').toUpperCase()}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-black text-amber-400 block">{pay.amount.toFixed(3)} TND</span>
@@ -282,14 +288,14 @@ export const SuperAdminDashboard: React.FC = () => {
                       <span>Rejeter</span>
                     </button>
                     <button
-                      onClick={() => handleApprove(pay.id)}
+                      onClick={() => handleApprove(pay.id, pay.plan_id || 'starter')}
                       disabled={actionProcessing === pay.id}
                       className="gold-button w-2/3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
                       {actionProcessing === pay.id ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Activation...</>
                       ) : (
-                        <><Check className="w-4 h-4" /> Valider & Activer (30 jours)</>
+                        <><Check className="w-4 h-4" /> Valider & Activer ({pay.plan_id ? pay.plan_id.toUpperCase() : 'STARTER'})</>
                       )}
                     </button>
                   </div>

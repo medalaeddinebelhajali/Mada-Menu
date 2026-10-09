@@ -88,7 +88,8 @@ export const SubscriptionTab: React.FC = () => {
         currentRestaurant.id,
         targetPlan.price_monthly,
         proofUrl,
-        d17Reference || `D17 pour Offre ${targetPlan.name_fr}`
+        d17Reference || `D17 pour Offre ${targetPlan.name_fr}`,
+        targetPlanId
       );
 
       // Recharger l'historique des paiements

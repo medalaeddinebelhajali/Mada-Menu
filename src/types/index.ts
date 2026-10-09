@@ -110,6 +110,7 @@ export interface Payment {
   id: string;
   subscription_id?: string;
   restaurant_id: string;
+  plan_id?: PlanTier;
   amount: number;
   currency: string;
   provider: 'konnect' | 'sandbox' | 'd17';
