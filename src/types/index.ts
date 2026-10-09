@@ -34,6 +34,7 @@ export interface Restaurant {
   city: string;
   currency: string;
   theme_color: string;
+  bg_color?: string | null;
   theme_mode: 'light' | 'dark' | 'system';
   is_active: boolean;
   created_at: string;

@@ -75,6 +75,8 @@ export const PublicMenuPage: React.FC = () => {
 
   const isRtl = lang === 'ar';
   const themeColor = restaurant.theme_color || '#d97706';
+  const bgColor = restaurant.bg_color || '#020617';
+  const isLightBg = ['#ffffff', '#f8fafc', '#fffbeb', '#f1f5f9', '#fef3c7'].includes(bgColor.toLowerCase()) || (bgColor.startsWith('#f') && !bgColor.startsWith('#f43f5e'));
 
   const filteredProducts = products.filter(p => {
     const matchesCategory = activeCategory === 'all' || p.category_id === activeCategory;
@@ -86,16 +88,19 @@ export const PublicMenuPage: React.FC = () => {
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16 selection:bg-amber-500 selection:text-slate-950"
+      className={`min-h-screen font-sans pb-16 transition-colors duration-300 ${
+        isLightBg ? 'text-slate-900 selection:bg-amber-400' : 'text-slate-100 selection:bg-amber-500'
+      }`}
+      style={{ backgroundColor: bgColor }}
     >
       {/* Cover Header */}
       <div className="relative h-56 sm:h-72 w-full overflow-hidden bg-slate-900">
         {restaurant.cover_url ? (
           <img src={restaurant.cover_url} alt={restaurant.name} className="w-full h-full object-cover opacity-60 scale-105" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-r from-slate-900 to-slate-950 opacity-80" style={{ backgroundImage: `linear-gradient(to right, ${themeColor}40, #020617)` }} />
+          <div className="w-full h-full bg-gradient-to-r from-slate-900 to-slate-950 opacity-80" style={{ backgroundImage: `linear-gradient(to right, ${themeColor}40, ${bgColor})` }} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent" />
 
         {/* Top Control Bar */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
@@ -115,7 +120,9 @@ export const PublicMenuPage: React.FC = () => {
 
       {/* Profile & Info Header */}
       <div className="max-w-3xl mx-auto px-4 -mt-20 relative z-20 space-y-6">
-        <div className="glass-panel p-6 rounded-3xl space-y-4 border border-slate-800/80 shadow-2xl">
+        <div className={`p-6 rounded-3xl space-y-4 border shadow-2xl transition-all ${
+          isLightBg ? 'bg-white/95 border-slate-200 text-slate-900 shadow-slate-200/60' : 'glass-panel border-slate-800/80 text-white'
+        }`}>
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
             <div className="w-24 h-24 rounded-2xl bg-slate-900 border-2 overflow-hidden shrink-0 shadow-xl flex items-center justify-center" style={{ borderColor: themeColor }}>
               {restaurant.logo_url ? (
@@ -125,11 +132,11 @@ export const PublicMenuPage: React.FC = () => {
               )}
             </div>
             <div className="space-y-1 flex-1">
-              <h1 className="text-2xl sm:text-3xl font-black text-white">{restaurant.name}</h1>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <h1 className={`text-2xl sm:text-3xl font-black ${isLightBg ? 'text-slate-900' : 'text-white'}`}>{restaurant.name}</h1>
+              <p className={`text-xs sm:text-sm leading-relaxed ${isLightBg ? 'text-slate-600' : 'text-slate-300'}`}>
                 {restaurant.description || 'Bienvenue dans notre établissement.'}
               </p>
-              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-400">
+              <div className={`pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs ${isLightBg ? 'text-slate-500' : 'text-slate-400'}`}>
                 {restaurant.address && (
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" style={{ color: themeColor }} />
@@ -150,13 +157,15 @@ export const PublicMenuPage: React.FC = () => {
         {/* Sticky Search & Category Bar */}
         <div className="sticky top-4 z-30 space-y-3">
           <div className="relative">
-            <Search className={`w-5 h-5 text-slate-400 absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-4' : 'left-4'}`} />
+            <Search className={`w-5 h-5 absolute top-1/2 -translate-y-1/2 ${isLightBg ? 'text-slate-400' : 'text-slate-400'} ${isRtl ? 'right-4' : 'left-4'}`} />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={isRtl ? 'ابحث عن مشروب أو طبق...' : 'Rechercher un plat ou une boisson...'}
-              className={`w-full py-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-white placeholder-slate-500 focus:outline-none backdrop-blur-xl shadow-xl text-sm ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
+              className={`w-full py-3.5 rounded-2xl border text-sm backdrop-blur-xl shadow-xl focus:outline-none transition-all ${
+                isLightBg ? 'bg-white/95 border-slate-200 text-slate-900 placeholder-slate-400 shadow-slate-200/50' : 'bg-slate-900/90 border-slate-800 text-white placeholder-slate-500'
+              } ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'}`}
             />
           </div>
 
@@ -165,7 +174,9 @@ export const PublicMenuPage: React.FC = () => {
             <button
               onClick={() => setActiveCategory('all')}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shadow-md ${
-                activeCategory === 'all' ? 'text-slate-950 font-black' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
+                activeCategory === 'all'
+                  ? 'text-slate-950 font-black'
+                  : isLightBg ? 'bg-white border border-slate-200 text-slate-700 hover:text-slate-950' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
               }`}
               style={activeCategory === 'all' ? { backgroundColor: themeColor, color: '#090d16' } : {}}
             >
@@ -180,7 +191,9 @@ export const PublicMenuPage: React.FC = () => {
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all shadow-md ${
-                    isActive ? 'text-slate-950 font-black' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
+                    isActive
+                      ? 'text-slate-950 font-black'
+                      : isLightBg ? 'bg-white border border-slate-200 text-slate-700 hover:text-slate-950' : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white'
                   }`}
                   style={isActive ? { backgroundColor: themeColor, color: '#090d16' } : {}}
                 >
@@ -196,9 +209,9 @@ export const PublicMenuPage: React.FC = () => {
         {/* Products List */}
         <div className="space-y-4 pt-2">
           {filteredProducts.length === 0 ? (
-            <div className="glass-panel p-12 rounded-3xl text-center space-y-3">
-              <Coffee className="w-12 h-12 text-slate-600 mx-auto" />
-              <h3 className="text-lg font-bold text-white">{isRtl ? 'لا توجد منتجات' : 'Aucun produit trouvé'}</h3>
+            <div className={`p-12 rounded-3xl text-center space-y-3 border ${isLightBg ? 'bg-white border-slate-200' : 'glass-panel border-slate-800'}`}>
+              <Coffee className="w-12 h-12 text-slate-400 mx-auto" />
+              <h3 className={`text-lg font-bold ${isLightBg ? 'text-slate-800' : 'text-white'}`}>{isRtl ? 'لا توجد منتجات' : 'Aucun produit trouvé'}</h3>
               <p className="text-xs text-slate-400">{isRtl ? 'جرب البحث عن صنف آخر.' : 'Essayez de modifier vos critères de recherche.'}</p>
             </div>
           ) : (
@@ -208,32 +221,34 @@ export const PublicMenuPage: React.FC = () => {
               return (
                 <div
                   key={product.id}
-                  className="glass-card p-4 sm:p-5 rounded-2xl flex items-center gap-4 border border-slate-800/60 hover:border-slate-700 transition-all group"
+                  className={`p-4 sm:p-5 rounded-2xl flex items-center gap-4 border transition-all ${
+                    isLightBg ? 'bg-white border-slate-200/80 shadow-sm hover:border-slate-300' : 'glass-card border-slate-800/60 hover:border-slate-700'
+                  }`}
                 >
                   {product.image_url ? (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-800 overflow-hidden shrink-0 border border-slate-800">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-800 overflow-hidden shrink-0 border border-slate-200/20">
                       <img src={product.image_url} alt={productName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     </div>
                   ) : (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 shrink-0 text-2xl">☕</div>
+                    <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-xl border flex items-center justify-center shrink-0 text-2xl ${isLightBg ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-slate-900 border-slate-800 text-slate-600'}`}>☕</div>
                   )}
                   <div className="flex-1 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-bold text-white transition-colors">{productName}</h3>
+                      <h3 className={`text-base font-bold transition-colors ${isLightBg ? 'text-slate-900' : 'text-white'}`}>{productName}</h3>
                       <span className="px-3 py-1 rounded-full text-xs font-black shrink-0 border" style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}50`, color: themeColor }}>
                         {product.price.toFixed(3)} {restaurant.currency}
                       </span>
                     </div>
-                    {productDesc && <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{productDesc}</p>}
+                    {productDesc && <p className={`text-xs line-clamp-2 leading-relaxed ${isLightBg ? 'text-slate-600' : 'text-slate-400'}`}>{productDesc}</p>}
                     <div className="pt-1 flex items-center gap-2 text-[10px] font-semibold">
                       {product.is_available ? (
-                        <span className="text-emerald-400 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-emerald-500 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           {isRtl ? 'متوفر' : 'Disponible'}
                         </span>
                       ) : (
-                        <span className="text-rose-400 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                        <span className="text-rose-500 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                           {isRtl ? 'غير متوفر' : 'Épuisé'}
                         </span>
                       )}
@@ -246,9 +261,9 @@ export const PublicMenuPage: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="pt-8 text-center border-t border-slate-900 space-y-2">
-          <p className="text-xs text-slate-500">
-            Powered by <span className="font-bold text-slate-300">Mada Menu SaaS</span> — Menu Digital Certifié
+        <div className={`pt-8 text-center border-t space-y-2 ${isLightBg ? 'border-slate-200' : 'border-slate-900'}`}>
+          <p className={`text-xs ${isLightBg ? 'text-slate-500' : 'text-slate-500'}`}>
+            Powered by <span className={`font-bold ${isLightBg ? 'text-slate-800' : 'text-slate-300'}`}>Mada Menu SaaS</span> — Menu Digital Certifié
           </p>
         </div>
       </div>

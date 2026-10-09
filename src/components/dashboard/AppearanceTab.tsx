@@ -14,6 +14,7 @@ export const AppearanceTab: React.FC = () => {
     address: currentRestaurant?.address || '',
     city: currentRestaurant?.city || 'Tunis',
     theme_color: currentRestaurant?.theme_color || '#d97706',
+    bg_color: currentRestaurant?.bg_color || '#020617',
     logo_url: currentRestaurant?.logo_url || '',
     cover_url: currentRestaurant?.cover_url || '',
   });
@@ -63,6 +64,7 @@ export const AppearanceTab: React.FC = () => {
         address:     formData.address || null,
         city:        formData.city,
         theme_color: formData.theme_color,
+        bg_color:    formData.bg_color,
         logo_url:    formData.logo_url || null,
         cover_url:   formData.cover_url || null,
         updated_at:  new Date().toISOString(),
@@ -84,6 +86,15 @@ export const AppearanceTab: React.FC = () => {
   };
 
   const presets = ['#d97706', '#0284c7', '#10b981', '#8b5cf6', '#f43f5e', '#f97316', '#e11d48', '#059669'];
+  const bgPresets = [
+    { color: '#020617', label: 'Noir Profond' },
+    { color: '#0f172a', label: 'Bleu Nuit' },
+    { color: '#18181b', label: 'Gris Carbone' },
+    { color: '#1c1917', label: 'Espresso Sombre' },
+    { color: '#ffffff', label: 'Blanc Pur' },
+    { color: '#f8fafc', label: 'Gris Soft' },
+    { color: '#fffbeb', label: 'Crème Chaud' },
+  ];
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -130,6 +141,38 @@ export const AppearanceTab: React.FC = () => {
                 title="Choisir une couleur personnalisée"
               />
               <span className="text-xs font-mono text-slate-300 uppercase pr-2">{formData.theme_color}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Background Color Picker */}
+        <div className="space-y-3 pt-3 border-t border-slate-800/80">
+          <label className="block text-xs font-semibold text-slate-300">Couleur d'Arrière-Plan du Menu (Fond de page)</label>
+          <div className="flex items-center gap-3 flex-wrap">
+            {bgPresets.map(preset => (
+              <button
+                key={preset.color}
+                type="button"
+                onClick={() => setFormData({ ...formData, bg_color: preset.color })}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${
+                  formData.bg_color === preset.color
+                    ? 'border-amber-400 ring-2 ring-amber-400/50 scale-105 shadow-md bg-slate-800'
+                    : 'border-slate-800 bg-slate-900 opacity-80 hover:opacity-100'
+                }`}
+              >
+                <span className="w-4 h-4 rounded-full border border-slate-700 shrink-0" style={{ backgroundColor: preset.color }} />
+                <span className="text-slate-200">{preset.label}</span>
+              </button>
+            ))}
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
+              <input
+                type="color"
+                value={formData.bg_color}
+                onChange={e => setFormData({ ...formData, bg_color: e.target.value })}
+                className="w-8 h-8 rounded-lg border-0 cursor-pointer bg-transparent"
+                title="Couleur de fond personnalisée"
+              />
+              <span className="text-xs font-mono text-slate-300 uppercase pr-2">{formData.bg_color}</span>
             </div>
           </div>
         </div>

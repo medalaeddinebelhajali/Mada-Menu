@@ -73,11 +73,14 @@ CREATE TABLE IF NOT EXISTS public.restaurants (
   city        TEXT        NOT NULL DEFAULT 'Tunis',
   currency    TEXT        NOT NULL DEFAULT 'TND',
   theme_color TEXT        NOT NULL DEFAULT '#d97706',
+  bg_color    TEXT        NOT NULL DEFAULT '#020617',
   theme_mode  theme_mode  NOT NULL DEFAULT 'dark',
   is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE public.restaurants ADD COLUMN IF NOT EXISTS bg_color TEXT NOT NULL DEFAULT '#020617';
 
 -- 2.3 — Membres d'un restaurant (propriétaire, gérant, staff)
 CREATE TABLE IF NOT EXISTS public.restaurant_members (
