@@ -36,6 +36,7 @@ export interface Restaurant {
   theme_color: string;
   bg_color?: string | null;
   theme_mode: 'light' | 'dark' | 'system';
+  menu_template?: 'restaurant' | 'cafe';
   is_active: boolean;
   created_at: string;
   updated_at: string;

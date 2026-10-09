@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, uploadImage } from '../../lib/supabase';
-import { Check, Loader2, Upload, Image, Trash2 } from 'lucide-react';
+import { Check, Loader2, Upload, Image, Trash2, Utensils, Coffee, Sparkles } from 'lucide-react';
 
 export const AppearanceTab: React.FC = () => {
   const { currentRestaurant, setCurrentRestaurant, refreshRestaurants } = useAuth();
@@ -15,6 +15,7 @@ export const AppearanceTab: React.FC = () => {
     city: currentRestaurant?.city || 'Tunis',
     theme_color: currentRestaurant?.theme_color || '#d97706',
     bg_color: currentRestaurant?.bg_color || '#020617',
+    menu_template: currentRestaurant?.menu_template || 'restaurant',
     logo_url: currentRestaurant?.logo_url || '',
     cover_url: currentRestaurant?.cover_url || '',
   });
@@ -57,17 +58,18 @@ export const AppearanceTab: React.FC = () => {
     const { error: updateError } = await supabase
       .from('restaurants')
       .update({
-        name:        formData.name,
-        description: formData.description || null,
-        phone:       formData.phone || null,
-        whatsapp:    formData.whatsapp || null,
-        address:     formData.address || null,
-        city:        formData.city,
-        theme_color: formData.theme_color,
-        bg_color:    formData.bg_color,
-        logo_url:    formData.logo_url || null,
-        cover_url:   formData.cover_url || null,
-        updated_at:  new Date().toISOString(),
+        name:          formData.name,
+        description:   formData.description || null,
+        phone:         formData.phone || null,
+        whatsapp:      formData.whatsapp || null,
+        address:       formData.address || null,
+        city:          formData.city,
+        theme_color:   formData.theme_color,
+        bg_color:      formData.bg_color,
+        menu_template: formData.menu_template,
+        logo_url:      formData.logo_url || null,
+        cover_url:     formData.cover_url || null,
+        updated_at:    new Date().toISOString(),
       })
       .eq('id', currentRestaurant.id);
 
@@ -174,6 +176,61 @@ export const AppearanceTab: React.FC = () => {
               />
               <span className="text-xs font-mono text-slate-300 uppercase pr-2">{formData.bg_color}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Menu Template Picker */}
+        <div className="space-y-3 pt-3 border-t border-slate-800/80">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300">Modèle & Style du Menu QR Public</label>
+            <p className="text-[11px] text-slate-400">Choisissez la disposition d'affichage adaptée à votre type d'établissement</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, menu_template: 'restaurant' })}
+              className={`p-4 rounded-2xl border text-left transition-all space-y-2 flex flex-col justify-between ${
+                formData.menu_template === 'restaurant'
+                  ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/30'
+                  : 'border-slate-800 bg-slate-900/60 hover:bg-slate-900'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Utensils className="w-5 h-5" />
+                </div>
+                {formData.menu_template === 'restaurant' && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-bold text-[10px]">Actif</span>
+                )}
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Restaurant Classique</h4>
+                <p className="text-[11px] text-slate-400 leading-snug">Design raffiné, sélection du chef, présentation en grille élégante et typographie prestige.</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, menu_template: 'cafe' })}
+              className={`p-4 rounded-2xl border text-left transition-all space-y-2 flex flex-col justify-between ${
+                formData.menu_template === 'cafe'
+                  ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/30'
+                  : 'border-slate-800 bg-slate-900/60 hover:bg-slate-900'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+                  <Coffee className="w-5 h-5" />
+                </div>
+                {formData.menu_template === 'cafe' && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-bold text-[10px]">Actif</span>
+                )}
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-sm">Café & Pâtisserie</h4>
+                <p className="text-[11px] text-slate-400 leading-snug">Icônes circulaires pour catégories, carrousel tactile horizontal et recherche rapide.</p>
+              </div>
+            </button>
           </div>
         </div>
 

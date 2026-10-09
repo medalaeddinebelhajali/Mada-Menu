@@ -75,12 +75,14 @@ CREATE TABLE IF NOT EXISTS public.restaurants (
   theme_color TEXT        NOT NULL DEFAULT '#d97706',
   bg_color    TEXT        NOT NULL DEFAULT '#020617',
   theme_mode  theme_mode  NOT NULL DEFAULT 'dark',
+  menu_template TEXT       NOT NULL DEFAULT 'restaurant',
   is_active   BOOLEAN     NOT NULL DEFAULT TRUE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE public.restaurants ADD COLUMN IF NOT EXISTS bg_color TEXT NOT NULL DEFAULT '#020617';
+ALTER TABLE public.restaurants ADD COLUMN IF NOT EXISTS menu_template TEXT NOT NULL DEFAULT 'restaurant';
 
 -- 2.3 — Membres d'un restaurant (propriétaire, gérant, staff)
 CREATE TABLE IF NOT EXISTS public.restaurant_members (

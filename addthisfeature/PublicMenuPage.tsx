@@ -47,7 +47,7 @@ export const PublicMenuPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-slate-400 animate-spin" />
       </div>
     );
   }
@@ -59,7 +59,7 @@ export const PublicMenuPage: React.FC = () => {
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
             <AlertCircle className="w-7 h-7" />
           </div>
-          <h2 className="text-lg font-bold text-white">Menu Temporairement Désactivé</h2>
+          <h2 className="text-lg font-bold text-white">Menu temporairement indisponible</h2>
           <p className="text-sm text-slate-400 leading-relaxed">
             Le menu de <span className="text-white font-semibold">{restaurant.name}</span> n'est pas accessible pour le moment.
           </p>
@@ -72,17 +72,17 @@ export const PublicMenuPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
         <AlertCircle className="w-12 h-12 text-slate-500 mb-4" />
-        <h2 className="text-xl font-bold text-white">Établissement Introuvable</h2>
+        <h2 className="text-xl font-bold text-white">Établissement introuvable</h2>
         <p className="text-slate-400 text-sm mt-2">Ce menu n'existe pas ou n'est plus actif.</p>
       </div>
     );
   }
 
-  const template = restaurant.menu_template === 'cafe' ? 'cafe' : 'restaurant';
-  const TemplateComponent = template === 'cafe' ? CafeTemplate : RestaurantTemplate;
+  const template = (restaurant as any).menu_template === 'cafe' ? 'cafe' : 'restaurant';
+  const Template = template === 'cafe' ? CafeTemplate : RestaurantTemplate;
 
   return (
-    <TemplateComponent
+    <Template
       restaurant={restaurant}
       categories={categories}
       products={products}
