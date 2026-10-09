@@ -33,17 +33,25 @@ export const OnboardingWizard: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.slug || !user) return;
+    if (!formData.name || !formData.slug) {
+      setError('Veuillez renseigner le nom et le slug.');
+      return;
+    }
+    if (!user) {
+      setError('Session utilisateur introuvable. Veuillez vous reconnecter.');
+      return;
+    }
+
     setSubmitting(true);
     setError('');
 
     try {
-      // 1. Vérifier si le slug est disponible
+      // 1. Vérifier si le slug est disponible (maybeSingle pour éviter PGRST116)
       const { data: existing } = await supabase
         .from('restaurants')
         .select('id')
         .eq('slug', formData.slug)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         setError('Ce slug est déjà utilisé. Veuillez en choisir un autre.');
@@ -51,8 +59,10 @@ export const OnboardingWizard: React.FC = () => {
         return;
       }
 
-      // 2. Créer le restaurant via la fonction SQL
-      const { data: restaurant, error: createError } = await supabase
+      // 2. Créer le restaurant via la fonction RPC SQL ou par insertion directe
+      let restaurantId: string | null = null;
+
+      const { data: rpcRes, error: rpcErr } = await supabase
         .rpc('create_restaurant_with_trial', {
           p_name: formData.name,
           p_slug: formData.slug,
@@ -62,44 +72,86 @@ export const OnboardingWizard: React.FC = () => {
           p_owner_id: user.id,
         });
 
-      if (createError) throw new Error(createError.message);
+      if (!rpcErr && rpcRes) {
+        restaurantId = typeof rpcRes === 'object' ? rpcRes.id : rpcRes;
+      } else {
+        console.warn('Création via RPC échouée, tentative d\'insertion directe:', rpcErr);
 
-      const restaurantId = restaurant?.id || restaurant;
+        // Fallback: Insertion directe dans la base de données
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email || 'user@mada-menu.tn',
+          full_name: user.full_name || user.email,
+        });
+
+        const { data: newRest, error: restErr } = await supabase
+          .from('restaurants')
+          .insert({
+            name: formData.name,
+            slug: formData.slug,
+            city: formData.city,
+            description: formData.description || 'Bienvenue dans notre établissement.',
+            phone: formData.phone || null,
+            address: formData.address || null,
+          })
+          .select()
+          .single();
+
+        if (restErr) throw new Error(restErr.message);
+        restaurantId = newRest.id;
+
+        await supabase.from('restaurant_members').insert({
+          restaurant_id: restaurantId,
+          user_id: user.id,
+          role: 'owner',
+        });
+
+        await supabase.from('subscriptions').insert({
+          restaurant_id: restaurantId,
+          plan_id: 'free',
+          status: 'trial',
+        });
+      }
 
       // 3. Insérer les données démo si demandé
       if (formData.includeDemoData && restaurantId) {
-        const demoCategories = [
-          { restaurant_id: restaurantId, name_fr: 'Café & Boissons Chaudes', name_ar: 'القهوة', icon: '☕', sort_order: 1 },
-          { restaurant_id: restaurantId, name_fr: 'Thés & Infusions',        name_ar: 'الشاي',  icon: '🍵', sort_order: 2 },
-          { restaurant_id: restaurantId, name_fr: 'Jus Frais & Boissons',    name_ar: 'العصائر', icon: '🥤', sort_order: 3 },
-          { restaurant_id: restaurantId, name_fr: 'Pâtisseries & Desserts',  name_ar: 'الحلويات', icon: '🥐', sort_order: 4 },
-          { restaurant_id: restaurantId, name_fr: 'Narguile Premium',        name_ar: 'الشيشة',  icon: '💨', sort_order: 5 },
-        ];
-
-        const { data: cats } = await supabase
-          .from('categories')
-          .insert(demoCategories)
-          .select();
-
-        if (cats && cats.length > 0) {
-          const catByOrder = (o: number) => cats.find((c: any) => c.sort_order === o)?.id;
-          const demoProducts = [
-            { restaurant_id: restaurantId, category_id: catByOrder(1), name_fr: 'Expresso', description_fr: 'Arôme riche 100% Arabica', price: 2.200, is_available: true, is_featured: true,  sort_order: 1 },
-            { restaurant_id: restaurantId, category_id: catByOrder(1), name_fr: 'Capussin',  description_fr: 'Espresso avec lait moussé',  price: 2.400, is_available: true, is_featured: false, sort_order: 2 },
-            { restaurant_id: restaurantId, category_id: catByOrder(1), name_fr: 'Chocolat Chaud', description_fr: 'Servi avec crème chantilly', price: 4.500, is_available: true, is_featured: false, sort_order: 3 },
-            { restaurant_id: restaurantId, category_id: catByOrder(2), name_fr: 'Thé Vert aux Amandes', description_fr: 'Traditionnel infusé aux amandes', price: 3.500, is_available: true, is_featured: true,  sort_order: 4 },
-            { restaurant_id: restaurantId, category_id: catByOrder(3), name_fr: "Jus d'Orange Frais", description_fr: 'Pressé à la minute', price: 3.800, is_available: true, is_featured: false, sort_order: 5 },
-            { restaurant_id: restaurantId, category_id: catByOrder(4), name_fr: 'Tiramisu Maison',    description_fr: 'Au café espresso et mascarpone', price: 5.500, is_available: true, is_featured: true,  sort_order: 6 },
-            { restaurant_id: restaurantId, category_id: catByOrder(5), name_fr: 'Chicha Pomme Menthe', description_fr: 'Qualité supérieure', price: 6.000, is_available: true, is_featured: false, sort_order: 7 },
+        try {
+          const demoCategories = [
+            { restaurant_id: restaurantId, name_fr: 'Café & Boissons Chaudes', name_ar: 'القهوة', icon: '☕', sort_order: 1 },
+            { restaurant_id: restaurantId, name_fr: 'Thés & Infusions',        name_ar: 'الشاي',  icon: '🍵', sort_order: 2 },
+            { restaurant_id: restaurantId, name_fr: 'Jus Frais & Boissons',    name_ar: 'العصائر', icon: '🥤', sort_order: 3 },
+            { restaurant_id: restaurantId, name_fr: 'Pâtisseries & Desserts',  name_ar: 'الحلويات', icon: '🥐', sort_order: 4 },
+            { restaurant_id: restaurantId, name_fr: 'Narguile Premium',        name_ar: 'الشيشة',  icon: '💨', sort_order: 5 },
           ];
-          await supabase.from('products').insert(demoProducts);
+
+          const { data: cats } = await supabase
+            .from('categories')
+            .insert(demoCategories)
+            .select();
+
+          if (cats && cats.length > 0) {
+            const catByOrder = (o: number) => cats.find((c: any) => c.sort_order === o)?.id;
+            const demoProducts = [
+              { restaurant_id: restaurantId, category_id: catByOrder(1), name_fr: 'Expresso', description_fr: 'Arôme riche 100% Arabica', price: 2.200, is_available: true, is_featured: true,  sort_order: 1 },
+              { restaurant_id: restaurantId, category_id: catByOrder(1), name_fr: 'Capussin',  description_fr: 'Espresso avec lait moussé',  price: 2.400, is_available: true, is_featured: false, sort_order: 2 },
+              { restaurant_id: restaurantId, category_id: catByOrder(1), name_fr: 'Chocolat Chaud', description_fr: 'Servi avec crème chantilly', price: 4.500, is_available: true, is_featured: false, sort_order: 3 },
+              { restaurant_id: restaurantId, category_id: catByOrder(2), name_fr: 'Thé Vert aux Amandes', description_fr: 'Traditionnel infusé aux amandes', price: 3.500, is_available: true, is_featured: true,  sort_order: 4 },
+              { restaurant_id: restaurantId, category_id: catByOrder(3), name_fr: "Jus d'Orange Frais", description_fr: 'Pressé à la minute', price: 3.800, is_available: true, is_featured: false, sort_order: 5 },
+              { restaurant_id: restaurantId, category_id: catByOrder(4), name_fr: 'Tiramisu Maison',    description_fr: 'Au café espresso et mascarpone', price: 5.500, is_available: true, is_featured: true,  sort_order: 6 },
+              { restaurant_id: restaurantId, category_id: catByOrder(5), name_fr: 'Chicha Pomme Menthe', description_fr: 'Qualité supérieure', price: 6.000, is_available: true, is_featured: false, sort_order: 7 },
+            ];
+            await supabase.from('products').insert(demoProducts);
+          }
+        } catch (demoErr) {
+          console.warn('Erreur données démo ignorée:', demoErr);
         }
       }
 
-      // 4. Rafraîchir les restaurants dans le contexte
+      // 4. Rafraîchir les restaurants et naviguer vers le tableau de bord
       await refreshRestaurants();
       navigate('/dashboard');
     } catch (err: any) {
+      console.error('Erreur Onboarding handleSubmit:', err);
       setError(err.message || 'Une erreur est survenue. Veuillez réessayer.');
       setSubmitting(false);
     }

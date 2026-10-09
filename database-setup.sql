@@ -298,6 +298,11 @@ RETURNS public.restaurants LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_restaurant public.restaurants;
 BEGIN
+  -- S'assurer que le profil existe dans public.profiles
+  INSERT INTO public.profiles (id, email)
+  VALUES (p_owner_id, COALESCE((SELECT email FROM auth.users WHERE id = p_owner_id), 'user@mada-menu.tn'))
+  ON CONFLICT (id) DO NOTHING;
+
   -- Créer le restaurant
   INSERT INTO public.restaurants (name, slug, city, description, phone)
   VALUES (p_name, p_slug, p_city, p_description, p_phone)
