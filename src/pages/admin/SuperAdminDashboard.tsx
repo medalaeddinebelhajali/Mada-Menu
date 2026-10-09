@@ -669,13 +669,30 @@ export const SuperAdminDashboard: React.FC = () => {
               />
             </div>
 
-            {/* Calcul date expiration */}
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-              <span className="text-slate-400">Nouvelle Date d'Expiration :</span>
-              <span className="font-extrabold text-emerald-400">
-                {new Date(Date.now() + modalDurationDays * 86400000).toLocaleDateString('fr-FR')}
-              </span>
-            </div>
+            {/* Calcul date expiration avec cumul */}
+            {(() => {
+              const rest = restaurants.find(r => r.id === d17ModalPayment.restaurant_id);
+              const currentEnd = rest?.subscription?.current_period_end;
+              const hasRemaining = currentEnd && new Date(currentEnd).getTime() > Date.now();
+              const baseTime = hasRemaining ? new Date(currentEnd).getTime() : Date.now();
+              const finalDate = new Date(baseTime + modalDurationDays * 86400000);
+
+              return (
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Nouvelle Date d'Expiration :</span>
+                    <span className="font-extrabold text-emerald-400">
+                      {finalDate.toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                  {hasRemaining && (
+                    <p className="text-[10px] text-amber-400 font-semibold pt-1 border-t border-slate-800/80">
+                      ✨ Cumul automatique : les jours restants sont conservés et additionnés aux {modalDurationDays} nouveaux jours !
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setD17ModalPayment(null)} className="w-1/3 py-3 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300">
@@ -809,6 +826,31 @@ export const SuperAdminDashboard: React.FC = () => {
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-amber-400 font-extrabold focus:outline-none focus:border-amber-400"
               />
             </div>
+
+            {/* Calcul date expiration avec cumul */}
+            {(() => {
+              const rest = restaurants.find(r => r.id === restSubModal.restaurantId);
+              const currentEnd = rest?.subscription?.current_period_end;
+              const hasRemaining = currentEnd && new Date(currentEnd).getTime() > Date.now();
+              const baseTime = hasRemaining ? new Date(currentEnd).getTime() : Date.now();
+              const finalDate = new Date(baseTime + restSubModal.durationDays * 86400000);
+
+              return (
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Nouvelle Date d'Expiration :</span>
+                    <span className="font-extrabold text-emerald-400">
+                      {finalDate.toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                  {hasRemaining && (
+                    <p className="text-[10px] text-amber-400 font-semibold pt-1 border-t border-slate-800/80">
+                      ✨ Cumul automatique : les jours restants sont préservés (+ {restSubModal.durationDays}j).
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setRestSubModal(null)} className="w-1/3 py-3 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300">

@@ -254,11 +254,17 @@ export const approveD17Payment = async (
 
     if (pay) {
       const targetPlan = planId || pay.plan_id || 'starter';
+      const { data: currentSub } = await supabase.from('subscriptions').select('current_period_end').eq('restaurant_id', pay.restaurant_id).maybeSingle();
+      const baseTime = (currentSub?.current_period_end && new Date(currentSub.current_period_end).getTime() > Date.now())
+        ? new Date(currentSub.current_period_end).getTime()
+        : Date.now();
+      const newEnd = new Date(baseTime + durationDays * 86400000).toISOString();
+
       await supabase.from('subscriptions').update({
         plan_id: targetPlan,
         status: 'active',
         current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + durationDays * 86400000).toISOString(),
+        current_period_end: newEnd,
         cancel_at_period_end: false
       }).eq('restaurant_id', pay.restaurant_id);
     }
@@ -284,13 +290,19 @@ export const adminUpdateSubscription = async (
 
   if (rpcError) {
     console.warn('RPC admin_update_subscription failed, using fallback update:', rpcError.message);
+    const { data: currentSub } = await supabase.from('subscriptions').select('current_period_end').eq('restaurant_id', restaurantId).maybeSingle();
+    const baseTime = (currentSub?.current_period_end && new Date(currentSub.current_period_end).getTime() > Date.now())
+      ? new Date(currentSub.current_period_end).getTime()
+      : Date.now();
+    const newEnd = new Date(baseTime + durationDays * 86400000).toISOString();
+
     const { data: sub } = await supabase
       .from('subscriptions')
       .update({
         plan_id: planId,
         status: status,
         current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + durationDays * 86400000).toISOString(),
+        current_period_end: newEnd,
         cancel_at_period_end: false
       })
       .eq('restaurant_id', restaurantId)

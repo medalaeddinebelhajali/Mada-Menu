@@ -489,12 +489,15 @@ BEGIN
   VALUES (v_sub_id, p_restaurant_id, p_amount, p_provider, p_reference, 'completed')
   RETURNING * INTO v_payment;
 
-  -- Mettre à jour l'abonnement
+  -- Mettre à jour l'abonnement (ajouter la durée au temps restant si actif)
   UPDATE public.subscriptions
   SET plan_id              = p_plan_id,
       status               = 'active',
       current_period_start = NOW(),
-      current_period_end   = NOW() + INTERVAL '30 days',
+      current_period_end   = CASE 
+                                WHEN current_period_end > NOW() THEN current_period_end + INTERVAL '30 days'
+                                ELSE NOW() + INTERVAL '30 days'
+                              END,
       cancel_at_period_end = FALSE
   WHERE restaurant_id = p_restaurant_id;
 
@@ -829,12 +832,15 @@ BEGIN
   -- Utiliser le plan spécifié en paramètre ou celui enregistré sur le paiement (sinon 'starter' par défaut)
   v_target_plan := COALESCE(p_plan_id, v_payment.plan_id, 'starter');
 
-  -- Mettre à jour l'abonnement du restaurant
+  -- Mettre à jour l'abonnement du restaurant (cumul du temps restant + nouvelle période)
   UPDATE public.subscriptions
   SET plan_id              = v_target_plan,
       status               = 'active',
       current_period_start = NOW(),
-      current_period_end   = NOW() + (p_duration_days || ' days')::INTERVAL,
+      current_period_end   = CASE 
+                                WHEN current_period_end > NOW() THEN current_period_end + (p_duration_days || ' days')::INTERVAL
+                                ELSE NOW() + (p_duration_days || ' days')::INTERVAL
+                              END,
       cancel_at_period_end = FALSE
   WHERE restaurant_id = v_payment.restaurant_id;
 
@@ -869,7 +875,10 @@ BEGIN
   SET plan_id              = p_plan_id,
       status               = p_status,
       current_period_start = NOW(),
-      current_period_end   = NOW() + (p_duration_days || ' days')::INTERVAL,
+      current_period_end   = CASE 
+                                WHEN current_period_end > NOW() THEN current_period_end + (p_duration_days || ' days')::INTERVAL
+                                ELSE NOW() + (p_duration_days || ' days')::INTERVAL
+                              END,
       cancel_at_period_end = FALSE
   WHERE restaurant_id = p_restaurant_id
   RETURNING * INTO v_sub;
