@@ -394,6 +394,7 @@ CREATE OR REPLACE FUNCTION public.get_public_menu(p_slug TEXT)
 RETURNS JSON LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
 DECLARE
   v_restaurant public.restaurants;
+  v_subscription public.subscriptions;
   v_result JSON;
 BEGIN
   SELECT * INTO v_restaurant FROM public.restaurants
@@ -403,8 +404,21 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  -- Vérifier l'abonnement
+  SELECT * INTO v_subscription FROM public.subscriptions
+  WHERE restaurant_id = v_restaurant.id;
+
+  -- Si l'abonnement a expiré ou que la période est dépassée
+  IF v_subscription.id IS NOT NULL AND (v_subscription.status = 'expired' OR v_subscription.current_period_end < NOW()) THEN
+    RETURN json_build_object(
+      'restaurant', row_to_json(v_restaurant),
+      'is_expired', TRUE
+    );
+  END IF;
+
   SELECT json_build_object(
     'restaurant', row_to_json(v_restaurant),
+    'is_expired', FALSE,
     'categories', (
       SELECT json_agg(
         json_build_object(

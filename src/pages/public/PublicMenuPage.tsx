@@ -15,6 +15,8 @@ export const PublicMenuPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [lang, setLang] = useState<'fr' | 'ar'>('fr');
 
+  const [isExpired, setIsExpired] = useState(false);
+
   useEffect(() => {
     const loadMenu = async () => {
       setLoading(true);
@@ -31,6 +33,12 @@ export const PublicMenuPage: React.FC = () => {
       }
 
       setRestaurant(data.restaurant as Restaurant);
+
+      if (data.is_expired) {
+        setIsExpired(true);
+        setLoading(false);
+        return;
+      }
 
       // Extraire catégories et produits de la réponse JSON imbriquée
       const cats: Category[] = [];
@@ -58,6 +66,25 @@ export const PublicMenuPage: React.FC = () => {
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 text-amber-400 animate-spin mx-auto" />
           <p className="text-slate-400 text-sm">Chargement du menu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isExpired && restaurant) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full glass-panel p-8 rounded-3xl border border-amber-500/30 space-y-4 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Menu Temporairement Désactivé</h2>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            L'abonnement de l'établissement <span className="font-bold text-amber-400">{restaurant.name}</span> est expiré ou en attente de renouvellement.
+          </p>
+          <p className="text-[11px] text-slate-500 pt-2 border-t border-slate-800">
+            Si vous êtes le gérant, connectez-vous sur votre espace Mada Menu pour renouveler votre offre.
+          </p>
         </div>
       </div>
     );
