@@ -12,15 +12,36 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- SECTION 1 : TYPES ÉNUMÉRÉS
 -- ============================================================
 
-CREATE TYPE user_role          AS ENUM ('owner', 'manager', 'staff');
-CREATE TYPE plan_tier          AS ENUM ('free', 'starter', 'pro');
-CREATE TYPE subscription_status AS ENUM ('trial', 'active', 'past_due', 'cancelled', 'expired');
-CREATE TYPE payment_status     AS ENUM ('pending', 'completed', 'failed', 'refunded');
-CREATE TYPE ticket_status      AS ENUM ('open', 'in_progress', 'resolved', 'closed');
-CREATE TYPE priority_level     AS ENUM ('low', 'medium', 'high');
-CREATE TYPE license_status     AS ENUM ('active', 'suspended', 'revoked', 'expired');
-CREATE TYPE theme_mode         AS ENUM ('light', 'dark', 'system');
-CREATE TYPE payment_provider   AS ENUM ('konnect', 'sandbox');
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('owner', 'manager', 'staff');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'plan_tier') THEN
+    CREATE TYPE plan_tier AS ENUM ('free', 'starter', 'pro');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_status') THEN
+    CREATE TYPE subscription_status AS ENUM ('trial', 'active', 'past_due', 'cancelled', 'expired');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_status') THEN
+    CREATE TYPE payment_status AS ENUM ('pending', 'completed', 'failed', 'refunded');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticket_status') THEN
+    CREATE TYPE ticket_status AS ENUM ('open', 'in_progress', 'resolved', 'closed');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'priority_level') THEN
+    CREATE TYPE priority_level AS ENUM ('low', 'medium', 'high');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'license_status') THEN
+    CREATE TYPE license_status AS ENUM ('active', 'suspended', 'revoked', 'expired');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'theme_mode') THEN
+    CREATE TYPE theme_mode AS ENUM ('light', 'dark', 'system');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_provider') THEN
+    CREATE TYPE payment_provider AS ENUM ('konnect', 'sandbox');
+  END IF;
+END $$;
 
 -- ============================================================
 -- SECTION 2 : TABLES PRINCIPALES
@@ -226,14 +247,17 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS set_updated_at_profiles ON public.profiles;
 CREATE TRIGGER set_updated_at_profiles
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_restaurants ON public.restaurants;
 CREATE TRIGGER set_updated_at_restaurants
   BEFORE UPDATE ON public.restaurants
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_products ON public.products;
 CREATE TRIGGER set_updated_at_products
   BEFORE UPDATE ON public.products
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
@@ -255,6 +279,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -518,27 +543,38 @@ ALTER TABLE public.support_tickets     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs          ENABLE ROW LEVEL SECURITY;
 
 -- ── PROFILES ──────────────────────────────────────────────────
--- Chaque utilisateur voit et modifie son propre profil
+DROP POLICY IF EXISTS "profiles_select_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 CREATE POLICY "profiles_select_own"   ON public.profiles FOR SELECT USING (id = auth.uid() OR public.is_super_admin());
 CREATE POLICY "profiles_update_own"   ON public.profiles FOR UPDATE USING (id = auth.uid());
 CREATE POLICY "profiles_insert_own"   ON public.profiles FOR INSERT WITH CHECK (id = auth.uid());
 
 -- ── RESTAURANTS ───────────────────────────────────────────────
--- Lecture publique des restaurants actifs (pour QR menu)
+DROP POLICY IF EXISTS "restaurants_select_public" ON public.restaurants;
+DROP POLICY IF EXISTS "restaurants_insert_member" ON public.restaurants;
+DROP POLICY IF EXISTS "restaurants_update_member" ON public.restaurants;
+DROP POLICY IF EXISTS "restaurants_delete_admin"  ON public.restaurants;
 CREATE POLICY "restaurants_select_public"  ON public.restaurants FOR SELECT USING (is_active = TRUE OR public.is_member_of(id) OR public.is_super_admin());
--- Modification réservée aux membres owner/manager
 CREATE POLICY "restaurants_insert_member"  ON public.restaurants FOR INSERT WITH CHECK (public.is_super_admin());
 CREATE POLICY "restaurants_update_member"  ON public.restaurants FOR UPDATE USING (public.is_owner_or_manager(id) OR public.is_super_admin());
 CREATE POLICY "restaurants_delete_admin"   ON public.restaurants FOR DELETE USING (public.is_super_admin());
 
 -- ── RESTAURANT MEMBERS ────────────────────────────────────────
+DROP POLICY IF EXISTS "members_select" ON public.restaurant_members;
+DROP POLICY IF EXISTS "members_insert" ON public.restaurant_members;
+DROP POLICY IF EXISTS "members_update" ON public.restaurant_members;
+DROP POLICY IF EXISTS "members_delete" ON public.restaurant_members;
 CREATE POLICY "members_select"  ON public.restaurant_members FOR SELECT USING (public.is_member_of(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "members_insert"  ON public.restaurant_members FOR INSERT WITH CHECK (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "members_update"  ON public.restaurant_members FOR UPDATE USING (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "members_delete"  ON public.restaurant_members FOR DELETE USING (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 
 -- ── CATEGORIES ────────────────────────────────────────────────
--- Lecture publique (pour affichage menu QR)
+DROP POLICY IF EXISTS "categories_select_public" ON public.categories;
+DROP POLICY IF EXISTS "categories_insert"        ON public.categories;
+DROP POLICY IF EXISTS "categories_update"        ON public.categories;
+DROP POLICY IF EXISTS "categories_delete"        ON public.categories;
 CREATE POLICY "categories_select_public" ON public.categories FOR SELECT USING (
   (SELECT is_active FROM public.restaurants WHERE id = restaurant_id) = TRUE
   OR public.is_member_of(restaurant_id)
@@ -549,7 +585,10 @@ CREATE POLICY "categories_update"        ON public.categories FOR UPDATE USING (
 CREATE POLICY "categories_delete"        ON public.categories FOR DELETE USING (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 
 -- ── PRODUCTS ──────────────────────────────────────────────────
--- Lecture publique des produits disponibles
+DROP POLICY IF EXISTS "products_select_public" ON public.products;
+DROP POLICY IF EXISTS "products_insert"        ON public.products;
+DROP POLICY IF EXISTS "products_update"        ON public.products;
+DROP POLICY IF EXISTS "products_delete"        ON public.products;
 CREATE POLICY "products_select_public"   ON public.products FOR SELECT USING (
   (is_available = TRUE AND (SELECT is_active FROM public.restaurants WHERE id = restaurant_id) = TRUE)
   OR public.is_member_of(restaurant_id)
@@ -563,42 +602,64 @@ CREATE POLICY "products_update"          ON public.products FOR UPDATE USING (pu
 CREATE POLICY "products_delete"          ON public.products FOR DELETE USING (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 
 -- ── PLANS ─────────────────────────────────────────────────────
--- Plans visibles par tous (page pricing)
+DROP POLICY IF EXISTS "plans_select_all"   ON public.plans;
+DROP POLICY IF EXISTS "plans_insert_admin" ON public.plans;
+DROP POLICY IF EXISTS "plans_update_admin" ON public.plans;
+DROP POLICY IF EXISTS "plans_delete_admin" ON public.plans;
 CREATE POLICY "plans_select_all"   ON public.plans FOR SELECT USING (TRUE);
 CREATE POLICY "plans_insert_admin" ON public.plans FOR INSERT WITH CHECK (public.is_super_admin());
 CREATE POLICY "plans_update_admin" ON public.plans FOR UPDATE USING (public.is_super_admin());
 CREATE POLICY "plans_delete_admin" ON public.plans FOR DELETE USING (public.is_super_admin());
 
 -- ── SUBSCRIPTIONS ─────────────────────────────────────────────
+DROP POLICY IF EXISTS "subscriptions_select" ON public.subscriptions;
+DROP POLICY IF EXISTS "subscriptions_insert" ON public.subscriptions;
+DROP POLICY IF EXISTS "subscriptions_update" ON public.subscriptions;
 CREATE POLICY "subscriptions_select" ON public.subscriptions FOR SELECT USING (public.is_member_of(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "subscriptions_insert" ON public.subscriptions FOR INSERT WITH CHECK (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "subscriptions_update" ON public.subscriptions FOR UPDATE USING (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 
 -- ── PAYMENTS ──────────────────────────────────────────────────
+DROP POLICY IF EXISTS "payments_select" ON public.payments;
+DROP POLICY IF EXISTS "payments_insert" ON public.payments;
 CREATE POLICY "payments_select" ON public.payments FOR SELECT USING (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "payments_insert" ON public.payments FOR INSERT WITH CHECK (public.is_owner_or_manager(restaurant_id) OR public.is_super_admin());
 
 -- ── INVOICES ──────────────────────────────────────────────────
+DROP POLICY IF EXISTS "invoices_select" ON public.invoices;
+DROP POLICY IF EXISTS "invoices_insert" ON public.invoices;
 CREATE POLICY "invoices_select" ON public.invoices FOR SELECT USING (public.is_member_of(restaurant_id) OR public.is_super_admin());
 CREATE POLICY "invoices_insert" ON public.invoices FOR INSERT WITH CHECK (public.is_super_admin());
 
 -- ── LICENSES ──────────────────────────────────────────────────
+DROP POLICY IF EXISTS "licenses_select" ON public.licenses;
+DROP POLICY IF EXISTS "licenses_insert" ON public.licenses;
+DROP POLICY IF EXISTS "licenses_update" ON public.licenses;
 CREATE POLICY "licenses_select" ON public.licenses FOR SELECT USING (owner_id = auth.uid() OR public.is_super_admin());
 CREATE POLICY "licenses_insert" ON public.licenses FOR INSERT WITH CHECK (public.is_super_admin());
 CREATE POLICY "licenses_update" ON public.licenses FOR UPDATE USING (public.is_super_admin());
 
 -- ── NOTIFICATIONS ─────────────────────────────────────────────
+DROP POLICY IF EXISTS "notif_select" ON public.notifications;
+DROP POLICY IF EXISTS "notif_update" ON public.notifications;
+DROP POLICY IF EXISTS "notif_insert" ON public.notifications;
+DROP POLICY IF EXISTS "notif_delete" ON public.notifications;
 CREATE POLICY "notif_select" ON public.notifications FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "notif_update" ON public.notifications FOR UPDATE USING (user_id = auth.uid());
 CREATE POLICY "notif_insert" ON public.notifications FOR INSERT WITH CHECK (public.is_super_admin());
 CREATE POLICY "notif_delete" ON public.notifications FOR DELETE USING (user_id = auth.uid());
 
 -- ── SUPPORT TICKETS ───────────────────────────────────────────
+DROP POLICY IF EXISTS "tickets_select" ON public.support_tickets;
+DROP POLICY IF EXISTS "tickets_insert" ON public.support_tickets;
+DROP POLICY IF EXISTS "tickets_update" ON public.support_tickets;
 CREATE POLICY "tickets_select" ON public.support_tickets FOR SELECT USING (user_id = auth.uid() OR public.is_super_admin());
 CREATE POLICY "tickets_insert" ON public.support_tickets FOR INSERT WITH CHECK (user_id = auth.uid());
 CREATE POLICY "tickets_update" ON public.support_tickets FOR UPDATE USING (user_id = auth.uid() OR public.is_super_admin());
 
 -- ── AUDIT LOGS ────────────────────────────────────────────────
+DROP POLICY IF EXISTS "audit_select" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_insert" ON public.audit_logs;
 CREATE POLICY "audit_select" ON public.audit_logs FOR SELECT USING (public.is_super_admin());
 CREATE POLICY "audit_insert" ON public.audit_logs FOR INSERT WITH CHECK (TRUE); -- interne (SECURITY DEFINER)
 
