@@ -1,0 +1,220 @@
+/* AdminLogin.css */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+.login-wrapper {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: "Outfit", sans-serif;
+  position: relative;
+  background: linear-gradient(135deg, #1f1813 0%, #150f0b 100%);
+  overflow: hidden;
+}
+
+/* Background floating elements for premium feel */
+.login-wrapper::before,
+.login-wrapper::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 1;
+}
+
+.login-wrapper::before {
+  width: 350px;
+  height: 350px;
+  background: rgba(197, 168, 128, 0.15);
+  top: 15%;
+  left: 20%;
+}
+
+.login-wrapper::after {
+  width: 400px;
+  height: 400px;
+  background: rgba(88, 28, 28, 0.1);
+  bottom: 10%;
+  right: 15%;
+}
+
+.login-back-home {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 18px;
+  border-radius: 30px;
+  transition: all 0.3s ease;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+}
+
+.login-back-home:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: translateX(-3px);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 30px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 5;
+  box-sizing: border-box;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-logo {
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.2));
+}
+
+.login-header h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  letter-spacing: 0.5px;
+}
+
+.login-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.login-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  font-size: 1.1rem;
+  opacity: 0.6;
+  pointer-events: none;
+  color: #ffffff;
+}
+
+.login-input-group input {
+  width: 100%;
+  padding: 14px 15px 14px 45px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.login-input-group input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(197, 168, 128, 0.6);
+  box-shadow: 0 0 0 3px rgba(197, 168, 128, 0.15);
+}
+
+.login-input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.login-error-msg {
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  padding: 10px 14px;
+  border-radius: 12px;
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.login-submit-btn {
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #c5a880 0%, #a08159 100%);
+  color: #2b221a;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 15px rgba(197, 168, 128, 0.2);
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(197, 168, 128, 0.35);
+  filter: brightness(1.1);
+}
+
+.login-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Hints panel at the bottom */
+.login-hints {
+  margin-top: 30px;
+  padding: 15px;
+  border-radius: 16px;
+  background: rgba(197, 168, 128, 0.05);
+  border: 1px solid rgba(197, 168, 128, 0.1);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.login-hints p {
+  margin: 0 0 5px 0;
+}
+
+.login-hints p:last-child {
+  margin-bottom: 0;
+}
+
+.login-hints code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c5a880;
+  font-family: monospace;
+}
