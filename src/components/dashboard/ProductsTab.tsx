@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getProducts, getCategories, getSubscription, createProduct, updateProduct, deleteProduct } from '../../lib/supabase';
+import { getProducts, getCategories, getSubscription, createProduct, updateProduct, deleteProduct, uploadImage } from '../../lib/supabase';
 import { Product, Category, Subscription } from '../../types';
 import { Plus, Edit2, Trash2, Check, AlertCircle, Search, Loader2, Upload } from 'lucide-react';
 
@@ -11,11 +11,31 @@ export const ProductsTab: React.FC = () => {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handleProductPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('La taille du fichier ne doit pas dépasser 5 Mo.');
+      return;
+    }
+    setErrorMsg('');
+    setUploadingImg(true);
+    try {
+      const publicUrl = await uploadImage(file, 'products');
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erreur d\'envoi d\'image sur Supabase Storage.');
+    } finally {
+      setUploadingImg(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     name_fr: '',
@@ -243,21 +263,14 @@ export const ProductsTab: React.FC = () => {
                   )}
                   <div className="flex-1 space-y-1">
                     <label className="cursor-pointer px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-amber-400 inline-flex items-center gap-2 transition-colors">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Importer une photo</span>
+                      {uploadingImg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      <span>{uploadingImg ? 'Envoi en cours...' : 'Importer une photo'}</span>
                       <input
                         type="file"
                         accept="image/*"
+                        disabled={uploadingImg}
                         className="hidden"
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setFormData(prev => ({ ...prev, image_url: reader.result as string }));
-                          };
-                          reader.readAsDataURL(file);
-                        }}
+                        onChange={handleProductPhotoUpload}
                       />
                     </label>
                     <input

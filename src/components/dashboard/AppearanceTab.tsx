@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { supabase, uploadImage } from '../../lib/supabase';
 import { Check, Loader2, Upload, Image, Trash2 } from 'lucide-react';
 
 export const AppearanceTab: React.FC = () => {
@@ -20,22 +20,32 @@ export const AppearanceTab: React.FC = () => {
 
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [error, setError] = useState('');
 
   if (!currentRestaurant) return null;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo_url' | 'cover_url') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logo_url' | 'cover_url') => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       setError('La taille du fichier ne doit pas dépasser 5 Mo.');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({ ...prev, [field]: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
+    setError('');
+    if (field === 'logo_url') setUploadingLogo(true);
+    else setUploadingCover(true);
+
+    try {
+      const publicUrl = await uploadImage(file, field === 'logo_url' ? 'logos' : 'covers');
+      setFormData(prev => ({ ...prev, [field]: publicUrl }));
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l\'envoi de l\'image.');
+    } finally {
+      if (field === 'logo_url') setUploadingLogo(false);
+      else setUploadingCover(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

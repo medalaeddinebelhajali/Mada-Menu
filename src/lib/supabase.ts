@@ -205,3 +205,30 @@ export const getSuperAdminStats = async () => {
   if (error) throw error;
   return data;
 };
+
+// ============================================================
+// UPLOAD IMAGES (SUPABASE STORAGE)
+// ============================================================
+export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
+  const fileExt = file.name.split('.').pop() || 'jpg';
+  const cleanExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${cleanExt}`;
+
+  const { data, error } = await supabase.storage
+    .from('menu-images')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+  if (error) {
+    console.error('Erreur upload Supabase Storage:', error);
+    throw new Error(`Échec d'envoi d'image: ${error.message}`);
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('menu-images')
+    .getPublicUrl(data.path);
+
+  return publicUrlData.publicUrl;
+};

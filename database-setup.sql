@@ -684,6 +684,32 @@ ON CONFLICT (id) DO UPDATE SET
   features                    = EXCLUDED.features;
 
 -- ============================================================
+-- SECTION 7 : SUPABASE STORAGE (BUCKET & POLICIES)
+-- ============================================================
+
+-- Créer le bucket public menu-images s'il n'existe pas
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('menu-images', 'menu-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Politiques de sécurité pour le stockage d'images
+DROP POLICY IF EXISTS "Menu Images Public Select" ON storage.objects;
+CREATE POLICY "Menu Images Public Select" ON storage.objects
+  FOR SELECT USING (bucket_id = 'menu-images');
+
+DROP POLICY IF EXISTS "Menu Images Authenticated Insert" ON storage.objects;
+CREATE POLICY "Menu Images Authenticated Insert" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'menu-images');
+
+DROP POLICY IF EXISTS "Menu Images Authenticated Update" ON storage.objects;
+CREATE POLICY "Menu Images Authenticated Update" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'menu-images');
+
+DROP POLICY IF EXISTS "Menu Images Authenticated Delete" ON storage.objects;
+CREATE POLICY "Menu Images Authenticated Delete" ON storage.objects
+  FOR DELETE USING (bucket_id = 'menu-images');
+
+-- ============================================================
 -- FIN DU SCRIPT
 -- ============================================================
 -- Pour exécuter : copiez ce script dans l'éditeur SQL de Supabase
