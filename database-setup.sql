@@ -797,11 +797,12 @@ BEGIN
 END;
 $$;
 
--- 8.5 — Fonction RPC : Valider un paiement D17 par l'administrateur et activer l'abonnement
+-- 8.5 — Fonction RPC : Valider un paiement D17 par l'administrateur avec durée et montant personnalisés
 CREATE OR REPLACE FUNCTION public.approve_d17_payment(
   p_payment_id UUID,
   p_plan_id plan_tier DEFAULT NULL,
-  p_duration_days INT DEFAULT 30
+  p_duration_days INT DEFAULT 30,
+  p_custom_amount NUMERIC DEFAULT NULL
 )
 RETURNS public.payments LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -814,9 +815,10 @@ BEGIN
     RAISE EXCEPTION 'Accès refusé. Réservé au SuperAdmin.';
   END IF;
 
-  -- Mettre à jour le statut du paiement
+  -- Mettre à jour le statut du paiement et optionnellement le montant
   UPDATE public.payments
-  SET status = 'completed'
+  SET status = 'completed',
+      amount = COALESCE(p_custom_amount, amount)
   WHERE id = p_payment_id
   RETURNING * INTO v_payment;
 
@@ -842,6 +844,54 @@ BEGIN
   VALUES (v_inv_num, v_payment.id, v_payment.restaurant_id, v_payment.amount, ROUND(v_payment.amount * 0.19, 3));
 
   RETURN v_payment;
+END;
+$$;
+
+-- 8.6 — Fonction RPC : Gestion directe d'un abonnement par le SuperAdmin (Durée & Prix sur mesure)
+CREATE OR REPLACE FUNCTION public.admin_update_subscription(
+  p_restaurant_id UUID,
+  p_plan_id plan_tier,
+  p_duration_days INT,
+  p_amount NUMERIC DEFAULT 0,
+  p_status subscription_status DEFAULT 'active'
+)
+RETURNS public.subscriptions LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_sub public.subscriptions;
+  v_payment_id UUID;
+  v_inv_num TEXT;
+BEGIN
+  IF NOT public.is_super_admin() THEN
+    RAISE EXCEPTION 'Accès refusé. Réservé au SuperAdmin.';
+  END IF;
+
+  UPDATE public.subscriptions
+  SET plan_id              = p_plan_id,
+      status               = p_status,
+      current_period_start = NOW(),
+      current_period_end   = NOW() + (p_duration_days || ' days')::INTERVAL,
+      cancel_at_period_end = FALSE
+  WHERE restaurant_id = p_restaurant_id
+  RETURNING * INTO v_sub;
+
+  IF NOT FOUND THEN
+    INSERT INTO public.subscriptions (restaurant_id, plan_id, status, current_period_start, current_period_end)
+    VALUES (p_restaurant_id, p_plan_id, p_status, NOW(), NOW() + (p_duration_days || ' days')::INTERVAL)
+    RETURNING * INTO v_sub;
+  END IF;
+
+  -- Si un montant > 0 est spécifié, générer paiement & facture
+  IF p_amount > 0 THEN
+    INSERT INTO public.payments (subscription_id, restaurant_id, plan_id, amount, currency, provider, provider_reference, status)
+    VALUES (v_sub.id, p_restaurant_id, p_plan_id, p_amount, 'TND', 'd17', 'Ajustement Manuel SuperAdmin', 'completed')
+    RETURNING id INTO v_payment_id;
+
+    v_inv_num := public.generate_invoice_number();
+    INSERT INTO public.invoices (invoice_number, payment_id, restaurant_id, amount, tax_amount)
+    VALUES (v_inv_num, v_payment_id, p_restaurant_id, p_amount, ROUND(p_amount * 0.19, 3));
+  END IF;
+
+  RETURN v_sub;
 END;
 $$;
 

@@ -230,19 +230,24 @@ export const getPendingD17Payments = async (): Promise<Payment[]> => {
 export const approveD17Payment = async (
   paymentId: string,
   planId?: PlanTier,
-  durationDays: number = 30
+  durationDays: number = 30,
+  customAmount?: number
 ): Promise<any> => {
   const { data: rpcData, error: rpcError } = await supabase.rpc('approve_d17_payment', {
     p_payment_id: paymentId,
     p_plan_id: planId || null,
-    p_duration_days: durationDays
+    p_duration_days: durationDays,
+    p_custom_amount: customAmount !== undefined ? customAmount : null
   });
 
   if (rpcError) {
     console.warn('RPC approve_d17_payment failed, using fallback update:', rpcError.message);
+    const updatePayload: any = { status: 'completed' };
+    if (customAmount !== undefined) updatePayload.amount = customAmount;
+
     const { data: pay } = await supabase
       .from('payments')
-      .update({ status: 'completed' })
+      .update(updatePayload)
       .eq('id', paymentId)
       .select()
       .single();
@@ -260,6 +265,52 @@ export const approveD17Payment = async (
     return pay;
   }
   return rpcData;
+};
+
+export const adminUpdateSubscription = async (
+  restaurantId: string,
+  planId: PlanTier,
+  durationDays: number,
+  amount: number = 0,
+  status: 'active' | 'trial' | 'past_due' | 'cancelled' | 'expired' = 'active'
+): Promise<any> => {
+  const { data: rpcData, error: rpcError } = await supabase.rpc('admin_update_subscription', {
+    p_restaurant_id: restaurantId,
+    p_plan_id: planId,
+    p_duration_days: durationDays,
+    p_amount: amount,
+    p_status: status
+  });
+
+  if (rpcError) {
+    console.warn('RPC admin_update_subscription failed, using fallback update:', rpcError.message);
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .update({
+        plan_id: planId,
+        status: status,
+        current_period_start: new Date().toISOString(),
+        current_period_end: new Date(Date.now() + durationDays * 86400000).toISOString(),
+        cancel_at_period_end: false
+      })
+      .eq('restaurant_id', restaurantId)
+      .select()
+      .single();
+    return sub;
+  }
+  return rpcData;
+};
+
+export const updatePlanPrice = async (planId: string, priceMonthly: number): Promise<Plan> => {
+  const { data, error } = await supabase
+    .from('plans')
+    .update({ price_monthly: priceMonthly, updated_at: new Date().toISOString() })
+    .eq('id', planId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Plan;
 };
 
 export const rejectD17Payment = async (paymentId: string): Promise<Payment> => {
