@@ -7,9 +7,7 @@ import {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vinqhhpezbkndwgdpize.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_W16rD_lcbp9TrsOYSSdrdA_nhuXmho1';
 
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('⚠️ Variables Supabase non définies dans l\'environnement, utilisation des valeurs par défaut.');
-}
+
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -180,7 +178,6 @@ export const submitD17Payment = async (
   });
 
   if (rpcError) {
-    console.warn('RPC submit_d17_payment not found or failed, using direct insert:', rpcError.message);
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('id')
@@ -204,7 +201,6 @@ export const submitD17Payment = async (
       .single();
 
     if (insErr) {
-      console.error('Error in direct insert submitD17Payment:', insErr);
       throw insErr;
     }
     return insData as Payment;
@@ -221,7 +217,6 @@ export const getPendingD17Payments = async (): Promise<Payment[]> => {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching pending D17 payments:', error);
     return [];
   }
   return (data || []) as Payment[];
@@ -241,7 +236,6 @@ export const approveD17Payment = async (
   });
 
   if (rpcError) {
-    console.warn('RPC approve_d17_payment failed, using fallback update:', rpcError.message);
     const updatePayload: any = { status: 'completed' };
     if (customAmount !== undefined) updatePayload.amount = customAmount;
 
@@ -289,7 +283,6 @@ export const adminUpdateSubscription = async (
   });
 
   if (rpcError) {
-    console.warn('RPC admin_update_subscription failed, using fallback update:', rpcError.message);
     const { data: currentSub } = await supabase.from('subscriptions').select('current_period_end').eq('restaurant_id', restaurantId).maybeSingle();
     const baseTime = (currentSub?.current_period_end && new Date(currentSub.current_period_end).getTime() > Date.now())
       ? new Date(currentSub.current_period_end).getTime()
@@ -395,7 +388,6 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
     });
 
   if (error) {
-    console.error('Erreur upload Supabase Storage:', error);
     throw new Error(`Échec d'envoi d'image: ${error.message}`);
   }
 

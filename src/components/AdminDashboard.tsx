@@ -74,8 +74,7 @@ const AdminDashboard: React.FC = () => {
       setProducts(productsData);
       setCategories(categoriesData);
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch {
       setLoading(false);
     }
   }, []);

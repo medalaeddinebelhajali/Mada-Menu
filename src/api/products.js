@@ -90,7 +90,6 @@ export const getMenu = async () => {
 
     return menu;
   } catch (error) {
-    console.warn('Supabase fetch failed, silently falling back to local menu seed data:', error);
     const products = getLocalProducts();
     return seedCategories.map(category => ({
       ...category,
@@ -120,7 +119,6 @@ export const getProducts = async () => {
       categoryName: categories.find(c => String(c.id) === String(product.category_id))?.name || 'Unknown'
     }));
   } catch (error) {
-    console.warn('Supabase products fetch failed, falling back to local products:', error);
     const products = getLocalProducts();
     return products.map(product => ({
       ...product,
@@ -140,7 +138,6 @@ export const getCategories = async () => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.warn('Supabase categories fetch failed, falling back to local categories:', error);
     return seedCategories;
   }
 };
@@ -166,7 +163,6 @@ export const addProduct = async (productData) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.warn('Supabase add failed, silently performing action locally:', error);
     const products = getLocalProducts();
     const parsedCategoryId = isNaN(Number(productData.categoryId))
       ? productData.categoryId
@@ -207,7 +203,6 @@ export const updateProduct = async (id, productData) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.warn('Supabase update failed, silently performing action locally:', error);
     const products = getLocalProducts();
     const index = products.findIndex(p => p.id === id);
     if (index === -1) throw new Error('Product not found');
@@ -239,7 +234,6 @@ export const deleteProduct = async (id) => {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.warn('Supabase delete failed, silently performing action locally:', error);
     const products = getLocalProducts();
     const filtered = products.filter(p => p.id !== id);
     saveLocalProducts(filtered);

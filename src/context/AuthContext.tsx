@@ -66,7 +66,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Erreur chargement restaurants:', error.message);
       return [];
     }
     return (data?.map((m: any) => m.restaurants).filter(Boolean) || []) as Restaurant[];

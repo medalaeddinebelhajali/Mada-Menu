@@ -46,8 +46,7 @@ const MenuPage: React.FC = () => {
       setCategories(data);
       setActiveCategory('all');
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+    } catch {
       setLoading(false);
     }
   }, []);

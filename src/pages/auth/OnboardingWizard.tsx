@@ -75,7 +75,6 @@ export const OnboardingWizard: React.FC = () => {
       if (!rpcErr && rpcRes) {
         restaurantId = typeof rpcRes === 'object' ? rpcRes.id : rpcRes;
       } else {
-        console.warn('Création via RPC échouée, tentative d\'insertion directe:', rpcErr);
 
         // Fallback: Insertion directe dans la base de données
         await supabase.from('profiles').upsert({
@@ -143,7 +142,7 @@ export const OnboardingWizard: React.FC = () => {
             await supabase.from('products').insert(demoProducts);
           }
         } catch (demoErr) {
-          console.warn('Erreur données démo ignorée:', demoErr);
+          // Ignorer l'erreur des données démo
         }
       }
 
@@ -151,7 +150,6 @@ export const OnboardingWizard: React.FC = () => {
       await refreshRestaurants();
       navigate('/dashboard');
     } catch (err: any) {
-      console.error('Erreur Onboarding handleSubmit:', err);
       setError(err.message || 'Une erreur est survenue. Veuillez réessayer.');
       setSubmitting(false);
     }

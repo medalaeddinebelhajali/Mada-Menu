@@ -38,8 +38,7 @@ export default function AdminLogin() {
       } else {
         setError("Identifiants incorrects. Veuillez réessayer.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Une erreur est survenue lors de la connexion.");
     } finally {
       setLoading(false);

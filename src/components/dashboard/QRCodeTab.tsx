@@ -22,8 +22,8 @@ export const QRCodeTab: React.FC = () => {
       link.href = url;
       link.download = `QR-Menu-${currentRestaurant.slug}.png`;
       link.click();
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // ignore
     }
   };
 
@@ -36,8 +36,8 @@ export const QRCodeTab: React.FC = () => {
       link.href = url;
       link.download = `QR-Menu-${currentRestaurant.slug}.svg`;
       link.click();
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // ignore
     }
   };
 
